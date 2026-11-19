@@ -1,0 +1,51 @@
+# 本地参考资料（上游仓库 clone、固件 bin、官方 PDF），整体不提交
+.local/
+
+# 真实配置（含 WiFi / API Key），只提交 config.example.json
+config.json
+config.*.json
+!config.example.json
+*.secret
+.env
+.env.*
+wrangler.local.toml
+
+# ESP-IDF / Arduino 构建产物
+build/
+sdkconfig
+sdkconfig.old
+*.bin
+*.elf
+*.map
+
+# Node.js
+node_modules/
+dist/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 日志与临时文件
+*.log
+*.tmp
+
+# Wrangler 本地状态/缓存（可能含登录态）
+.wrangler/
+
+# 会话粘贴的截图（可能含凭证明文）
+.qoder-input-images/
+
+# 脚本生成产物（稿件/音频/数据缓存），不入库
+src/morning-news/reports/
+src/morning-news/site/
+src/creator-analytics/reports/

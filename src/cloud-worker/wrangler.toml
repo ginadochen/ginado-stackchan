@@ -1,0 +1,17 @@
+name = "zhihu-daily"
+main = "src/worker.js"
+compatibility_date = "2025-03-01"
+compatibility_flags = ["nodejs_compat"]
+
+# KV 命名空间：clone 后执行 npx wrangler kv namespace create REPORTS，
+# 把返回的 id 填到下面（公开仓库为占位符；维护者本机真配置见 wrangler.local.toml，已 gitignore）
+kv_namespaces = [
+  { binding = "REPORTS", id = "YOUR_KV_NAMESPACE_ID" }
+]
+
+# 定时触发（UTC）：每天 23:30 = 北京 07:30 早报；每周一 00:00 = 北京 08:00 创作周报
+[triggers]
+crons = ["30 23 * * *", "0 0 * * 1"]
+
+# 域名从 Pages 迁过来后启用：
+# routes = [{ pattern = "zhihu.ginado.ai", custom_domain = true }]

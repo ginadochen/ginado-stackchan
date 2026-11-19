@@ -1,0 +1,15 @@
+{
+  "wifi": {
+    "ssid": "YOUR_WIFI_SSID",
+    "password": "YOUR_WIFI_PASSWORD"
+  },
+  "ai": {
+    "provider": "YOUR_PROVIDER",
+    "api_key": "YOUR_API_KEY",
+    "model": "YOUR_MODEL"
+  },
+  "device": {
+    "name": "stackchan",
+    "serial_port": "COM3"
+  }
+}
