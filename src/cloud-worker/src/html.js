@@ -86,6 +86,12 @@ body.big-tr #meta{display:none}
 .src .p{flex:0 0 52px;text-align:right;color:#9aa09a}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .chip2{border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:4px 12px;font-size:13px;color:#bbb}
+/* 周报数据看板（替代文字稿） */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:26px 18px;padding:10px 6px;margin-bottom:18px}
+.stat .k{font-size:15px;color:rgba(255,255,255,.45)}
+.stat .v{font-size:44px;font-weight:800;color:#fff;margin-top:10px;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat .v .u{font-size:20px;font-weight:700;margin-left:2px}
+.stat .s{font-size:14px;color:rgba(255,255,255,.45);margin-top:10px}
 h3.sec{font-size:15px;color:#9aa09a;margin:14px 0 6px;font-weight:600}
 #toast{position:fixed;left:50%;bottom:16vh;bottom:16dvh;transform:translateX(-50%);background:rgba(30,34,30,.95);border:1px solid rgba(255,255,255,.15);color:#eee;border-radius:999px;padding:10px 22px;font-size:15px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:10;white-space:nowrap}
 #toast.show{opacity:1}
@@ -149,6 +155,11 @@ h3.sec{font-size:15px;color:#9aa09a;margin:14px 0 6px;font-weight:600}
   #tr .ln{font-size:26px;font-weight:400;line-height:1.55;color:rgba(255,255,255,.42);padding:14px 18px;margin:4px 0;border-radius:14px;border-left:4px solid transparent}
   #tr .ln.past{color:rgba(255,255,255,.42)}
   #tr .ln.cur{font-size:32px;font-weight:700;color:#FFFFFF;background:rgba(255,255,255,.06);border-left-color:var(--accent)}
+  .stats{gap:34px 22px;padding:16px 10px;margin-bottom:22px}
+  .stat .k{font-size:16px}
+  .stat .v{font-size:50px}
+  .stat .v .u{font-size:22px}
+  .stat .s{font-size:15px}
   /* 弹层：宽屏居中靠下 */
   #sheetBox{left:50%;right:auto;transform:translateX(-50%);bottom:20px;width:min(760px,92vw);max-width:none;margin:0;border-radius:20px;max-height:82vh;max-height:82dvh}
   #sheetHead{font-size:19px;padding:18px 24px 10px}
@@ -220,7 +231,7 @@ const BODY = `
 const JS = `
 var CONF = window.PAGE_CONF;
 var audio = document.getElementById('audio');
-var D = null, lines = [], weights = [], totalW = 0, curLine = -1;
+var D = null, lines = [], lineEls = [], weights = [], totalW = 0, curLine = -1;
 var peaks = null, dragging = false, manualUntil = 0;
 var rates = [1, 1.25, 1.5], rateIdx = 0;
 var epTitleStr = '', showName = '';
@@ -233,12 +244,13 @@ function toast(msg){ var t = $('toast'); t.textContent = msg; t.classList.add('s
 function fmt(s){ if(!isFinite(s) || s < 0) s = 0; s = Math.floor(s); var h = Math.floor(s/3600), m = Math.floor(s%3600/60), ss = s%60; var mm = (h && m < 10 ? '0' : '') + m; return (h ? h + ':' : '') + mm + ':' + (ss<10?'0':'') + ss; }
 
 /* ---------- 歌词稿 / 新闻流 ---------- */
-function buildLines(text){
+function buildLines(text, prefix){
   lines = text.split('\\n').filter(function(x){ return x.trim(); });
   weights = []; totalW = 0;
   lines.forEach(function(l){ totalW += l.length; weights.push(totalW); });
-  $('tr').innerHTML = lines.map(function(l, i){ return '<div class="ln" data-i="' + i + '">' + esc(l) + '</div>'; }).join('');
-  Array.prototype.forEach.call($('tr').children, function(el){
+  $('tr').innerHTML = (prefix || '') + lines.map(function(l, i){ return '<div class="ln" data-i="' + i + '">' + esc(l) + '</div>'; }).join('');
+  lineEls = Array.prototype.slice.call($('tr').querySelectorAll('.ln'));
+  lineEls.forEach(function(el){
     el.addEventListener('click', function(){
       manualUntil = 0;
       seekFrac((weights[el.dataset.i-1] || 0) / totalW);
@@ -251,18 +263,34 @@ function lineAt(frac){
   for (var i = 0; i < weights.length; i++) if (w < weights[i]) return i;
   return weights.length - 1;
 }
+/* 周报右栏：数据看板（突出数字，替代文字稿） */
+function fmtW(n){ if (n >= 10000) return (n/10000).toFixed(1).replace(/\.0$/,'') + '<span class="u">万</span>'; return String(n); }
+function buildStats(d){
+  var t = d.totals, c = d.counts, days = d.days;
+  var rate = function(x){ return t.view ? (x / t.view * 100).toFixed(1) + '%' : '—'; };
+  var per = (c.answer + c.pin) ? (t.followers / (c.answer + c.pin)).toFixed(1) : '0';
+  var cards = [
+    ['近' + days + '日阅读(播放)', fmtW(t.view), '回答 ' + c.answer + ' · 想法 ' + c.pin],
+    ['近' + days + '日赞同', fmtW(t.up), '赞同率 ' + rate(t.up)],
+    ['近' + days + '日收藏', fmtW(t.collect), '收藏率 ' + rate(t.collect)],
+    ['近' + days + '日转发', fmtW(t.share), '转发率 ' + rate(t.share)],
+    ['近' + days + '日评论', fmtW(t.comment), '评论率 ' + rate(t.comment)],
+    ['近' + days + '日涨粉', fmtW(t.followers), '篇均 ' + per + ' 个']
+  ];
+  return '<div class="stats">' + cards.map(function(x){ return '<div class="stat"><div class="k">' + x[0] + '</div><div class="v">' + x[1] + '</div><div class="s">' + x[2] + '</div></div>'; }).join('') + '</div>';
+}
 function lineStart(i){ return (weights[i-1] || 0) / totalW; }
 function paintLines(){
   if (!audio.duration || !lines.length) return;
   var idx = lineAt(audio.currentTime / audio.duration);
   if (idx === curLine) return;
   curLine = idx;
-  Array.prototype.forEach.call($('tr').children, function(el, i){
+  lineEls.forEach(function(el, i){
     el.className = 'ln' + (i < idx ? ' past' : i === idx ? ' cur' : '');
   });
   updateMediaMeta();
   if (Date.now() > manualUntil) {
-    var el = $('tr').children[idx], box = $('tr');
+    var el = lineEls[idx], box = $('tr');
     var top = wideMQ.matches
       ? el.offsetTop - (box.clientHeight - el.offsetHeight) / 2
       : el.offsetTop - box.clientHeight * 0.35;
@@ -419,7 +447,7 @@ $('sheet').addEventListener('click', function(ev){ if (ev.target === $('sheet'))
 bindAll('.js-list', function(){
   var rows = [
     { href: '/', cover: '知乎<br>早报', t: '知乎早报 · 每日热榜语音版', s: '每天 07:30 更新', cur: CONF.kind === 'morning' },
-    { href: '/creator/', cover: '创作<br>周报', t: '创作周报 · 数据与建议语音版', s: '每周一 08:00 更新', cur: CONF.kind === 'creator' }
+    { href: '/creator/', cover: '创作<br>周报', t: '创作周报 · 数据与建议语音版', s: '每天 08:00 更新', cur: CONF.kind === 'creator' }
   ];
   openSheet('播放列表 / 往期早报', rows.map(function(r){
     return '<div class="row" style="display:flex;gap:12px;align-items:center;cursor:pointer" data-href="' + r.href + '"><div style="flex:0 0 44px;width:44px;height:44px;border-radius:6px;background:' + (r.cur ? '#245EF4' : 'rgba(255,255,255,.12)') + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;text-align:center;line-height:1.2">' + r.cover + '</div><div style="min-width:0"><div class="t">' + r.t + (r.cur ? ' <span style="color:#245EF4;font-size:13px">· 正在播放</span>' : '') + '</div><div class="s">' + r.s + '</div></div></div>';
@@ -439,7 +467,7 @@ bindAll('.js-info', function(){
     h += '<h3 class="sec">读者画像</h3><div class="chips">' + D.age.map(function(a){ return '<span class="chip2">' + esc(a.name) + ' ' + a.count + '人</span>'; }).join('') + D.location.map(function(l){ return '<span class="chip2">' + esc(l.name) + ' ' + l.count + '人</span>'; }).join('') + '</div>';
   }
   h += '<h3 class="sec">关于本期</h3><div class="tip">生成时间：' + esc(D.generated) + '</div>' +
-       '<div class="tip">' + (CONF.kind === 'morning' ? '内容来自知乎热榜高赞回答的 AI 总结，仅供快速了解，详情以知乎原文为准。每天北京时间 07:30 自动更新。' : '数据来自知乎开放平台本人创作统计，规则建议仅供参考。每周一北京时间 08:00 自动更新。') + '</div>' +
+       '<div class="tip">' + (CONF.kind === 'morning' ? '内容来自知乎热榜高赞回答的 AI 总结，仅供快速了解，详情以知乎原文为准。每天北京时间 07:30 自动更新。' : '数据来自知乎开放平台本人创作统计，规则建议仅供参考。每天北京时间 08:00 自动更新。') + '</div>' +
        '<div class="tip">行车中请勿操作屏幕；建议驻车时播放，音频通过车机媒体通道输出。歌词高亮按字数估算，仅供参考。</div>';
   openSheet('节目信息', h);
 });
@@ -489,7 +517,7 @@ fetch(CONF.api).then(function(r){ return r.ok ? r.json() : null; }).then(functio
     $('epSub').textContent = d.counts.answer + '篇回答 / ' + d.counts.pin + '条想法';
     document.title = '创作周报 · 知乎看板';
   }
-  buildLines(d.text);
+  if (CONF.kind === 'morning') buildLines(d.text); else buildLines(d.text, buildStats(d));
   audio.src = CONF.audio;
   loadPeaks(CONF.audio);
   paintTimes();

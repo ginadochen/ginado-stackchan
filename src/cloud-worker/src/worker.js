@@ -490,7 +490,7 @@ export default {
 
   async scheduled(event, env, ctx) {
     const job =
-      event.cron === "0 0 * * 1"
+      event.cron === "0 0 * * *"
         ? runCreator(env).then((r) => console.log("creator ok", r))
         : runMorning(env).then((r) => console.log("morning ok", r));
     ctx.waitUntil(job.catch((e) => console.error("scheduled failed", e)));

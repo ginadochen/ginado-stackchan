@@ -9,9 +9,9 @@ kv_namespaces = [
   { binding = "REPORTS", id = "YOUR_KV_NAMESPACE_ID" }
 ]
 
-# 定时触发（UTC）：每天 23:30 = 北京 07:30 早报；每周一 00:00 = 北京 08:00 创作周报
+# 定时触发（UTC）：每天 23:30 = 北京 07:30 早报；每天 00:00 = 北京 08:00 创作周报
 [triggers]
-crons = ["30 23 * * *", "0 0 * * 1"]
+crons = ["30 23 * * *", "0 0 * * *"]
 
 # 域名从 Pages 迁过来后启用：
 # routes = [{ pattern = "zhihu.ginado.ai", custom_domain = true }]
