@@ -29,13 +29,7 @@ svg{display:block}
 #tr .ln{font-size:21px;line-height:1.6;color:var(--fut);padding:12px 4px;transition:color .3s,font-size .3s,background .3s;cursor:pointer}
 #tr .ln.past{color:var(--past)}
 #tr .ln.cur{color:var(--cur);font-weight:700;font-size:23px}
-#trFloat{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;pointer-events:none}
-#trFloat button{pointer-events:auto;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;display:flex;align-items:center;justify-content:center}
-#trFloat svg{width:20px;height:20px;fill:currentColor}
 body.no-tr #trwrap{display:none}
-body.big-tr #tr .ln{font-size:26px}
-body.big-tr #tr .ln.cur{font-size:29px}
-body.big-tr #meta{display:none}
 /* 节目信息（窄屏） */
 #meta{display:flex;align-items:center;gap:14px;padding:14px 2px 10px;order:2}
 #cover{flex:0 0 56px;width:56px;height:56px;border-radius:8px;background:var(--accent);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:13px;line-height:1.25;text-align:center}
@@ -57,7 +51,7 @@ body.big-tr #meta{display:none}
 #rateBtn{position:relative}
 #rateBtn text{fill:currentColor;font-size:7px;font-weight:700}
 /* 底栏（窄屏） */
-#bot{display:flex;align-items:center;justify-content:space-between;padding:6px 2px 0;order:4}
+#bot{display:flex;align-items:center;justify-content:center;padding:6px 2px 0;order:4}
 #listBtn{display:flex;align-items:center;gap:10px;white-space:nowrap;background:var(--pill);border-radius:12px;padding:12px 26px;font-size:16px;color:#e8e8e8}
 #listBtn svg{width:20px;height:20px;fill:currentColor}
 /* 弹层 */
@@ -89,8 +83,8 @@ body.big-tr #meta{display:none}
 /* 周报数据看板（替代文字稿） */
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:26px 18px;padding:10px 6px;margin-bottom:18px}
 .stat .k{font-size:15px;color:rgba(255,255,255,.45)}
-.stat .v{font-size:44px;font-weight:800;color:#fff;margin-top:10px;font-variant-numeric:tabular-nums;line-height:1.1}
-.stat .v .u{font-size:20px;font-weight:700;margin-left:2px}
+.stat .v{font-size:40px;font-weight:800;color:#fff;margin-top:10px;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat .v .u{font-size:18px;font-weight:700;margin-left:2px}
 .stat .s{font-size:14px;color:rgba(255,255,255,.45);margin-top:10px}
 .stat .s .up{color:var(--accent);font-weight:700}
 h3.sec{font-size:15px;color:#9aa09a;margin:14px 0 6px;font-weight:600}
@@ -173,7 +167,6 @@ const BODY = `
 <div id="app">
   <div id="left">
     <div id="top">
-      <button class="icobtn no" id="foldBtn" aria-label="收起文字稿"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6z"/></svg></button>
       <button id="pill" class="js-list" aria-label="历史期数与播放列表"><span class="dot"></span><span id="pillTxt">加载中…</span></button>
       <div class="sp"></div>
       <button id="rateChip" class="wo" aria-label="倍速切换">1.0x</button>
@@ -206,19 +199,13 @@ const BODY = `
   </div>
   <div id="trwrap">
     <div id="tr"></div>
-    <div id="trFloat" class="no">
-      <button id="trClose" aria-label="关闭文字稿"><svg viewBox="0 0 24 24"><path d="M6.4 5L5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 5 12 10.6z"/></svg></button>
-      <button id="trBig" aria-label="放大文字稿"><svg viewBox="0 0 24 24"><path d="M5 5h5V3H3v7h2zm14 0h-5V3h7v7h-2zM5 19h5v2H3v-7h2zm14 0h-5v2h7v-7h-2z"/></svg></button>
-    </div>
   </div>
   <div id="meta" class="no">
     <div id="cover">知乎<br>早报</div>
     <div class="tt"><div id="epTitle">加载中…</div><div id="epShow">知乎早报 | 语音版</div></div>
   </div>
   <div id="bot" class="no">
-    <button class="icobtn js-info" id="infoBtn" aria-label="信息"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" fill="none"/><path fill="none" d="M12 11v5"/><path fill="none" d="M12 7.5h.01"/></svg></button>
     <button id="listBtn" class="js-list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path fill="none" d="M4 6h12M4 11h12M4 16h8"/><path fill="none" d="M18 13.5v5l4.5-2.5z"/></svg>播放列表</button>
-    <button class="icobtn js-toc" id="tocBtn" aria-label="目录"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path fill="none" d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1.4" fill="currentColor" stroke="none"/></svg></button>
   </div>
 </div>
 <div id="sheet"><div id="sheetBox">
@@ -430,9 +417,6 @@ if ('mediaSession' in navigator) {
 }
 
 /* ---------- 顶栏 / 稿区开关（窄屏） ---------- */
-$('foldBtn').addEventListener('click', function(){ document.body.classList.toggle('no-tr'); });
-$('trClose').addEventListener('click', function(){ document.body.classList.add('no-tr'); });
-$('trBig').addEventListener('click', function(){ document.body.classList.toggle('big-tr'); setTimeout(drawWave, 50); });
 $('shareBtn').addEventListener('click', function(){
   var url = location.origin + (CONF.kind === 'morning' ? '/' : '/creator/');
   if (navigator.share) navigator.share({ title: document.title, url: url }).catch(function(){});
