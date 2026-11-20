@@ -15,3 +15,7 @@ crons = ["30 23 * * *", "0 0 * * *"]
 
 # 域名从 Pages 迁过来后启用：
 # routes = [{ pattern = "zhihu.ginado.ai", custom_domain = true }]
+
+# Workers AI 绑定：免费额度内调用（每天 10000 Neurons），无需 API key
+[ai]
+binding = "AI"

@@ -3,7 +3,7 @@
  *
  * 定时触发或 POST /api/refresh 时：
  *   调知乎开放平台 HTTP API（Bearer Access Secret）拉热榜/创作数据
- *   → 直答总结（限流时降级为热榜摘要）/ 规则建议
+ *   → 直答总结（限流时降级为热榜摘要）/ AI 建议（失败回退规则）
  *   → 在 Worker 内用 EdgeTTS 协议合成中文语音
  *   → 数据与音频存 KV，页面由本 Worker 直接提供。
  *
@@ -333,6 +333,69 @@ function suggest(agg, days) {
   return out.slice(0, 5);
 }
 
+/* ---------- AI 建议（Workers AI 免费额度；失败回退上面的规则建议） ---------- */
+
+const AI_MODEL = "@cf/openai/gpt-oss-120b";
+
+function aiPrompt(agg, days) {
+  const data = {
+    发布数量: agg.counts,
+    总计: agg.totals,
+    单篇: agg.items.filter((r) => r.has_stats).slice(0, 8).map((r) => ({
+      标题: String(r.title).slice(0, 60), 类型: r.type, 浏览: r.view, 赞同: r.up,
+      收藏: r.collect, 转发: r.share, 评论: r.comment,
+      互动率: r.view ? (((r.up + r.collect + r.share + r.comment) / r.view) * 100).toFixed(2) + "%" : "0%",
+    })),
+    流量来源: agg.sources.slice(0, 5).map((s) => ({ 名称: s.name, 占比: (s.ratio * 100).toFixed(1) + "%" })),
+    读者年龄: agg.age, 读者地域: agg.location,
+  };
+  return (
+    "你是知乎创作顾问。下面是某创作者近" + days + "天的真实数据（JSON，账号级口径）。\n" +
+    "先按这些基准分析，再给建议：\n" +
+    "- 赞同率=赞同/浏览：低于1%偏低（看多认同少），高于3%很强；\n" +
+    "- 收藏率=收藏/浏览：高于1%说明内容实用；\n" +
+    "- 推荐流量占比偏低时，标题和选题要更抓人；搜索占比高说明有长尾价值，适合方法/解读类题材；\n" +
+    "- 回答靠选题和开头观点，想法靠短平快和互动，两者玩法不同。\n" +
+    "给出3~4条改进建议，要求：\n" +
+    "1. 你只能看到标题和统计数据，看不到正文和图片：严禁对正文内容、配图、段落结构编造具体改法（如换图、改结构）；建议只能围绕数据反映的问题：赞同率/收藏率高低、更新频率、流量来源占比、选题方向；\n" +
+    "2. 每条不超过60字，用\"建议……\"句式，给具体动作；\n" +
+    "3. 只能使用数据中已有的指标，严禁编造点击率、完读率等数据里没有的指标；\n" +
+    "4. 优先引用具体数字；可提及作品标题作为例子，但只能给选题或标题写法层面的改法；不要把已回答过的问题当新选题推荐；推荐新选题只给方向（如\"财报解读类\"），严禁编造具体事实或数字当选题前提；\n" +
+    "5. 不要建议把想法改写成回答；不要重复\"浏览最高的是哪篇\"（播报已包含）；\n" +
+    "6. 评论数可能未统计，不要仅凭评论为0下结论；\n" +
+    "7. 更新频率建议必须对照数据中的实际发布数量，已达标就不要提；\n" +
+    "8. 不要空泛套话，纯中文，只输出JSON数组，如 [\"建议1\",\"建议2\",\"建议3\"]。\n" +
+    "数据：" + JSON.stringify(data)
+  );
+}
+
+/* 取回复文本：新版模型返回 OpenAI 格式（choices），老版返回 response */
+function aiText(res) {
+  const c = res && res.choices && res.choices[0] && res.choices[0].message;
+  return String((c && c.content) || (res && res.response) || "");
+}
+
+async function aiSuggest(env, agg, days) {
+  if (!env.AI) throw new Error("AI binding missing");
+  const res = await env.AI.run(AI_MODEL, {
+    messages: [{ role: "user", content: aiPrompt(agg, days) }],
+    max_completion_tokens: 4000, // 推理也占输出预算，留足余量；max_tokens 已被官方弃用
+  });
+  const text = aiText(res)
+    .trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  const m = text.match(/\[[\s\S]*\]/);
+  if (!m) throw new Error("AI response has no JSON array");
+  const arr = JSON.parse(m[0]);
+  if (!Array.isArray(arr)) throw new Error("AI response not array");
+  const out = arr
+    .filter((s) => typeof s === "string")
+    .map((s) => s.trim())
+    .filter((s) => s.length >= 8 && s.length <= 120)
+    .slice(0, 4);
+  if (out.length < 2) throw new Error("AI suggestions too few");
+  return out;
+}
+
 function creatorText(agg, suggestions, days) {
   const t = agg.totals, c = agg.counts;
   const parts = [
@@ -343,7 +406,7 @@ function creatorText(agg, suggestions, days) {
     const b = agg.items[0];
     parts.push(`表现最好的是《${b.title.slice(0, 30)}》，${b.view}次浏览，${b.up}个赞同。`);
   }
-  const tips = suggestions.filter((s) => !s.startsWith("浏览最高")).slice(0, 2);
+  const tips = suggestions.filter((s) => !s.startsWith("浏览最高"));
   if (tips.length) parts.push("给你的建议：" + tips.join("；"));
   parts.push("周报完毕，继续加油！");
   return parts.join("\n");
@@ -404,10 +467,18 @@ async function runCreator(env, days = 7) {
   const agg = analyze(contents, statsMap);
   const acc = await accountStats(env, days);
   if (acc) Object.assign(agg, acc);
-  const suggestions = suggest(agg, days);
+  let suggestions, suggestBy = "ai", suggestError = null;
+  try {
+    suggestions = await aiSuggest(env, agg, days);
+  } catch (e) {
+    suggestError = String((e && e.message) || e).slice(0, 200);
+    console.error("AI suggest failed, fallback to rules:", suggestError);
+    suggestions = suggest(agg, days);
+    suggestBy = "rules";
+  }
   const text = creatorText(agg, suggestions, days);
   const mp3 = await tts(text);
-  const data = { generated: bjNow(), days, ...agg, suggestions, text };
+  const data = { generated: bjNow(), days, ...agg, suggestions, suggest_by: suggestBy, suggest_error: suggestError, text };
   await env.REPORTS.put("creator:data", JSON.stringify(data));
   await env.REPORTS.put("creator:mp3", mp3);
   return { items: contents.length, audioBytes: mp3.byteLength };
@@ -480,6 +551,14 @@ async function handleFetch(req, env) {
       if (step === "zhida") {
         const t = await zhida(env, "用一句话介绍知乎热榜是什么");
         return json({ ok: true, answer: t });
+      }
+      if (step === "ai") {
+        if (!env.AI) return json({ ok: false, error: "AI binding missing" }, 500);
+        const res = await env.AI.run(AI_MODEL, {
+          messages: [{ role: "user", content: "用一句话介绍知乎热榜是什么" }],
+          max_completion_tokens: 2000,
+        });
+        return json({ ok: true, model: AI_MODEL, keys: Object.keys(res || {}), answer: aiText(res) });
       }
       if (step === "tts") {
         const mp3 = await tts("你好，这是一条云端语音合成测试。");

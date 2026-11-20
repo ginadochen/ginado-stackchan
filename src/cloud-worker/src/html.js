@@ -451,7 +451,7 @@ bindAll('.js-info', function(){
     h += '<h3 class="sec">读者画像</h3><div class="chips">' + D.age.map(function(a){ return '<span class="chip2">' + esc(a.name) + ' ' + a.count + '人</span>'; }).join('') + D.location.map(function(l){ return '<span class="chip2">' + esc(l.name) + ' ' + l.count + '人</span>'; }).join('') + '</div>';
   }
   h += '<h3 class="sec">关于本期</h3><div class="tip">生成时间：' + esc(D.generated) + '</div>' +
-       '<div class="tip">' + (CONF.kind === 'morning' ? '内容来自知乎热榜高赞回答的 AI 总结，仅供快速了解，详情以知乎原文为准。每天北京时间 07:30 自动更新。' : '数据来自知乎开放平台本人创作统计，规则建议仅供参考。每天北京时间 08:00 自动更新。统计口径为账号级近7天（含老内容产生的流量），与知乎客户端一致。') + '</div>' +
+       '<div class="tip">' + (CONF.kind === 'morning' ? '内容来自知乎热榜高赞回答的 AI 总结，仅供快速了解，详情以知乎原文为准。每天北京时间 07:30 自动更新。' : '数据来自知乎开放平台本人创作统计，AI 建议仅供参考。每天北京时间 08:00 自动更新。统计口径为账号级近7天（含老内容产生的流量），与知乎客户端一致。') + '</div>' +
        '<div class="tip">行车中请勿操作屏幕；建议驻车时播放，音频通过车机媒体通道输出。歌词高亮按字数估算，仅供参考。</div>';
   openSheet('节目信息', h);
 });
