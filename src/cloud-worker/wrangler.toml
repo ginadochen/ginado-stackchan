@@ -19,3 +19,7 @@ crons = ["30 23 * * *", "0 0 * * *"]
 # Workers AI 绑定：免费额度内调用（每天 10000 Neurons），无需 API key
 [ai]
 binding = "AI"
+
+# Workers AI 绑定：免费额度内调用（每天 10000 Neurons），无需 API key
+[ai]
+binding = "AI"
