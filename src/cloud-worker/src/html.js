@@ -92,6 +92,7 @@ body.big-tr #meta{display:none}
 .stat .v{font-size:44px;font-weight:800;color:#fff;margin-top:10px;font-variant-numeric:tabular-nums;line-height:1.1}
 .stat .v .u{font-size:20px;font-weight:700;margin-left:2px}
 .stat .s{font-size:14px;color:rgba(255,255,255,.45);margin-top:10px}
+.stat .s .up{color:var(--accent);font-weight:700}
 h3.sec{font-size:15px;color:#9aa09a;margin:14px 0 6px;font-weight:600}
 #toast{position:fixed;left:50%;bottom:16vh;bottom:16dvh;transform:translateX(-50%);background:rgba(30,34,30,.95);border:1px solid rgba(255,255,255,.15);color:#eee;border-radius:999px;padding:10px 22px;font-size:15px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:10;white-space:nowrap}
 #toast.show{opacity:1}
@@ -266,16 +267,15 @@ function lineAt(frac){
 /* 周报右栏：数据看板（突出数字，替代文字稿） */
 function fmtW(n){ if (n >= 10000) return (n/10000).toFixed(1).replace(/\.0$/,'') + '<span class="u">万</span>'; return String(n); }
 function buildStats(d){
-  var t = d.totals, c = d.counts, days = d.days;
-  var rate = function(x){ return t.view ? (x / t.view * 100).toFixed(1) + '%' : '—'; };
-  var per = (c.answer + c.pin) ? (t.followers / (c.answer + c.pin)).toFixed(1) : '0';
+  var t = d.totals, days = d.days, td = d.today || {};
+  var up = function(n){ return '今日 <span class="up">↑</span> ' + (n || 0); };
   var cards = [
-    ['近' + days + '日阅读(播放)', fmtW(t.view), '回答 ' + c.answer + ' · 想法 ' + c.pin],
-    ['近' + days + '日赞同', fmtW(t.up), '赞同率 ' + rate(t.up)],
-    ['近' + days + '日收藏', fmtW(t.collect), '收藏率 ' + rate(t.collect)],
-    ['近' + days + '日转发', fmtW(t.share), '转发率 ' + rate(t.share)],
-    ['近' + days + '日评论', fmtW(t.comment), '评论率 ' + rate(t.comment)],
-    ['近' + days + '日涨粉', fmtW(t.followers), '篇均 ' + per + ' 个']
+    ['近' + days + '日阅读(播放)', fmtW(t.view), up(td.view)],
+    ['近' + days + '日赞同', fmtW(t.up), up(td.up)],
+    ['近' + days + '日收藏', fmtW(t.collect), up(td.collect)],
+    ['近' + days + '日转发', fmtW(t.share), up(td.share)],
+    ['近' + days + '日评论', fmtW(t.comment), up(td.comment)],
+    ['近' + days + '日涨粉', fmtW(t.followers), up(td.followers)]
   ];
   return '<div class="stats">' + cards.map(function(x){ return '<div class="stat"><div class="k">' + x[0] + '</div><div class="v">' + x[1] + '</div><div class="s">' + x[2] + '</div></div>'; }).join('') + '</div>';
 }
@@ -467,7 +467,7 @@ bindAll('.js-info', function(){
     h += '<h3 class="sec">读者画像</h3><div class="chips">' + D.age.map(function(a){ return '<span class="chip2">' + esc(a.name) + ' ' + a.count + '人</span>'; }).join('') + D.location.map(function(l){ return '<span class="chip2">' + esc(l.name) + ' ' + l.count + '人</span>'; }).join('') + '</div>';
   }
   h += '<h3 class="sec">关于本期</h3><div class="tip">生成时间：' + esc(D.generated) + '</div>' +
-       '<div class="tip">' + (CONF.kind === 'morning' ? '内容来自知乎热榜高赞回答的 AI 总结，仅供快速了解，详情以知乎原文为准。每天北京时间 07:30 自动更新。' : '数据来自知乎开放平台本人创作统计，规则建议仅供参考。每天北京时间 08:00 自动更新。') + '</div>' +
+       '<div class="tip">' + (CONF.kind === 'morning' ? '内容来自知乎热榜高赞回答的 AI 总结，仅供快速了解，详情以知乎原文为准。每天北京时间 07:30 自动更新。' : '数据来自知乎开放平台本人创作统计，规则建议仅供参考。每天北京时间 08:00 自动更新。统计口径为账号级近7天（含老内容产生的流量），与知乎客户端一致。') + '</div>' +
        '<div class="tip">行车中请勿操作屏幕；建议驻车时播放，音频通过车机媒体通道输出。歌词高亮按字数估算，仅供参考。</div>';
   openSheet('节目信息', h);
 });
@@ -518,8 +518,9 @@ fetch(CONF.api).then(function(r){ return r.ok ? r.json() : null; }).then(functio
     document.title = '创作周报 · 知乎看板';
   }
   if (CONF.kind === 'morning') buildLines(d.text); else buildLines(d.text, buildStats(d));
-  audio.src = CONF.audio;
-  loadPeaks(CONF.audio);
+  var audioUrl = CONF.audio + '?v=' + encodeURIComponent(d.generated);
+  audio.src = audioUrl;
+  loadPeaks(audioUrl);
   paintTimes();
   paintLines();
   updateMediaMeta();

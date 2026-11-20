@@ -349,6 +349,44 @@ function creatorText(agg, suggestions, days) {
   return parts.join("\n");
 }
 
+/* 账号级近 N 天统计（与知乎客户端同口径）；失败返回 null 回退单篇加总 */
+async function accountStats(env, days) {
+  const end = bjDate();
+  const start = new Date(Date.now() + 8 * 3600000 - (days - 1) * DAY_MS).toISOString().slice(0, 10);
+  try {
+    const d = await zhGet(env, `/api/v1/user/creator_account_stats?StartDate=${start}&EndDate=${end}&ContentType=all`);
+    const m = d.Metrics || {}, t = m.Today || {};
+    const daily = (d.FollowerDetails && d.FollowerDetails.Daily) || [];
+    const fans = daily.filter((x) => x.Date >= start && x.Date <= end).reduce((s, x) => s + (x.NetIncrease || 0), 0);
+    const todayFans = (daily.find((x) => x.Date === end) || {}).NetIncrease || 0;
+    const aud = d.Audience || {};
+    const topN = (arr, n) => (arr || []).slice().sort((a, b) => (b.Count || 0) - (a.Count || 0)).slice(0, n).map((x) => ({ name: x.Name, count: x.Count || 0 }));
+    return {
+      totals: {
+        view: (m.ViewCount || 0) + (m.PlayCount || 0),
+        up: m.UpvoteCount || 0,
+        collect: m.CollectCount || 0,
+        share: m.ShareCount || 0,
+        comment: m.CommentCount || 0,
+        followers: fans,
+      },
+      today: {
+        view: (t.ViewCount || 0) + (t.PlayCount || 0),
+        up: t.UpvoteCount || 0,
+        collect: t.CollectCount || 0,
+        share: t.ShareCount || 0,
+        comment: t.CommentCount || 0,
+        followers: todayFans,
+      },
+      sources: (aud.Source || []).map((x) => ({ name: x.Name, count: x.Count || 0, ratio: x.Ratio || 0 })).sort((a, b) => b.count - a.count),
+      age: topN(aud.Age, 3),
+      location: topN(aud.Location, 5),
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function runCreator(env, days = 7) {
   const contents = await fetchRecent(env, days, 30);
   const statsMap = {};
@@ -364,6 +402,8 @@ async function runCreator(env, days = 7) {
     }
   }
   const agg = analyze(contents, statsMap);
+  const acc = await accountStats(env, days);
+  if (acc) Object.assign(agg, acc);
   const suggestions = suggest(agg, days);
   const text = creatorText(agg, suggestions, days);
   const mp3 = await tts(text);
