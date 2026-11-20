@@ -97,7 +97,7 @@ h3.sec{font-size:15px;color:#9aa09a;margin:14px 0 6px;font-weight:600}
   body::before{background:radial-gradient(50% 60% at 24% 40%,rgba(36,94,244,.05),transparent 70%)}
   .wo{display:flex!important}
   .no{display:none!important}
-  #app{flex-direction:row;max-width:none;margin:0;padding:50px 200px;gap:50px;align-items:stretch}
+  #app{flex-direction:row;max-width:none;margin:0;padding:26px 200px;gap:50px;align-items:stretch}
   #left{flex:0 0 38%;min-width:0;display:flex;flex-direction:column;justify-content:space-between}
   #trwrap{flex:1 1 62%;min-width:0;height:100%}
   /* 左栏顶部：日期胶囊 + 收藏 + 倍速 */
