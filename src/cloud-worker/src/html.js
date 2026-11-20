@@ -109,7 +109,7 @@ h3.sec{font-size:15px;color:#9aa09a;margin:14px 0 6px;font-weight:600}
   #rateChip{min-width:76px;height:52px;align-items:center;justify-content:center;background:var(--pill);border-radius:999px;font-size:17px;font-weight:600;color:#e8e8e8;font-variant-numeric:tabular-nums}
   #rateChip:active{background:rgba(255,255,255,.16)}
   /* 左栏中部：封面大卡片 */
-  #coverCard{position:relative;flex:0 0 auto;width:50%;min-width:220px;aspect-ratio:1/1;margin:auto;border-radius:22px;background:var(--accent);border:1px solid rgba(255,255,255,.14);padding:22px;flex-direction:column;justify-content:center;align-items:flex-start;overflow:hidden}
+  #coverCard{position:relative;flex:0 0 auto;width:60%;min-width:220px;aspect-ratio:1/1;margin:auto;border-radius:22px;background:var(--accent);border:1px solid rgba(255,255,255,.14);padding:22px;flex-direction:column;justify-content:center;align-items:flex-start;overflow:hidden}
   #cardKicker{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:600;color:rgba(255,255,255,.92)}
   .klogo{width:20px;height:20px;flex:0 0 20px}
   #cardEn{font-size:clamp(34px,6vh,54px);font-weight:800;line-height:1.08;color:#fff;margin-top:8px;letter-spacing:.5px}
