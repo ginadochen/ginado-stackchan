@@ -257,7 +257,7 @@ function buildStats(d){
   var t = d.totals, days = d.days, td = d.today || {};
   var up = function(n){ return '今日 <span class="up">↑</span> ' + (n || 0); };
   var cards = [
-    ['近' + days + '日阅读(播放)', fmtW(t.view), up(td.view)],
+    ['近' + days + '日阅读', fmtW(t.view), up(td.view)],
     ['近' + days + '日赞同', fmtW(t.up), up(td.up)],
     ['近' + days + '日收藏', fmtW(t.collect), up(td.collect)],
     ['近' + days + '日转发', fmtW(t.share), up(td.share)],
